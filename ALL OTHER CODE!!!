@@ -1,0 +1,232 @@
+(this line will run the camera and open up a site with the stream)
+
+ 
+
+mjpg_streamer -i "/usr/local/lib/input_uvc.so -r 320x240 -yuv -f 15" -o "/usr/local/lib/output_http.so -w /usr/local/www"
+
+
+
+------------------------------------------------------------------------------------------------
+
+
+RPI Code:
+
+
+(Master_Slave_Code5.py)
+
+(this should be under the file "code" type in "cd code" to access it)
+
+(This code will translate the information from the python, to the arduino Uno Board)
+
+
+
+All the code:
+
+
+
+import sys
+
+import smbus
+
+sys.path.append("/home/pi/code/quick2wire-python-api/")
+
+from flask import Flask, render_template, request
+
+from quick2wire.i2c import I2CMaster, writing_bytes, reading
+
+
+
+bus = smbus.SMBus(1)
+
+POWER_ADDRESS = 0x00
+
+
+
+address = 0x04
+
+right = 0
+left = 0
+
+up = 0
+
+import time
+
+
+
+#PORT = 10
+
+#HOST = '10.42.0.111'
+
+
+
+app = Flask(__name__)
+
+print('here')
+
+@app.route("/left/",methods=['GET','POST'])
+
+def default():
+
+        if request.method == 'GET':
+
+                left = request.args.get('left', 'no val')
+
+                right = request.args.get('right', 'no val')
+
+                up = request.args.get('up', 'no val')
+
+                left = int(left)
+
+                right = int(right)
+
+                up = int(up)
+
+                String = [left,right,up]
+
+                #test = [1,2,3]
+
+                print (String)
+
+
+
+                bus.write_i2c_block_data(address, 5, String)
+
+
+
+        return render_template('main.html')
+
+
+
+
+
+
+if __name__ == '__main__':
+
+        app.run(host='0.0.0.0', port=10, debug=True)
+
+
+
+(type in "sudo python3 Master_Slave_Code5.py" under the directory "code" to run this)
+
+
+
+--------------------------------------------------------------------------------------------------
+
+
+
+Python Code:
+
+
+
+(This code will get the info from the controller and send it to the raspberry pi)
+
+
+
+import requests
+
+import pygame
+
+pygame.init()
+
+pygame.joystick.init()
+
+j = pygame.joystick.Joystick(0)
+
+j.init()
+
+print ( j.get_name())
+
+def eye():
+
+    while True:
+
+        pygame.event.pump()
+
+        x = j.get_button(0)#1
+
+        y = j.get_button(1)#2
+
+        TextV=["1","2","3","4","L1","R1","L2","L2","S1","S2"]   #what is printed
+
+        BV=[0,0,0,0,0,0,0,0,0,0]    #which value will be printed from TextV
+
+        Q=""    #makes it so you can print the values without them combining
+
+        out = [0,0,0,0]
+
+        it = 0
+
+        pygame.event.pump()
+
+
+
+        rightvert = j.get_axis(3)
+
+        rightvert = rightvert * -100
+
+        rightvert = int(rightvert)
+
+        #print (rightvert)
+
+
+
+        righthorz = j.get_axis(2)
+
+        righthorz = righthorz * -100
+
+        righthorz = int(righthorz)
+
+        #print (righthorz)
+
+
+
+        leftvert = j.get_axis(1)
+
+        leftvert = leftvert * -100
+
+        leftvert = int(leftvert)
+
+        #print (leftvert)
+
+        print (rightvert , leftvert , righthorz)
+
+
+
+        leftvert = leftvert + 100
+        leftvert = leftvert * 180
+
+        leftvert = leftvert / 200
+
+        #r = requests.get('http://10.42.0.111:10/left/{}'.format( leftvert ))
+
+
+
+        rightvert = rightvert + 100
+
+        rightvert = rightvert * 180
+
+        rightvert = rightvert / 200
+
+        #r = requests.get('http://10.42.0.111:10/right/{}'.format( rightvert ))
+
+
+
+        righthorz = righthorz + 100
+
+        righthorz = righthorz * 180
+
+        righthorz = righthorz / 200
+
+        #r = requests.get('http://10.42.0.111:10/up/{}'.format( righthorz ))
+
+
+
+        payload = {'left': leftvert,'right': rightvert,'up': righthorz,'button1':x,'button2':y}
+
+        requests.get('http://10.42.0.111:10/left/',params=payload)
+
+
+
+--------------------------------------------------------------------------------------------------
+
+
