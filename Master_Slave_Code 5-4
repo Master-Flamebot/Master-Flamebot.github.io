@@ -1,0 +1,63 @@
+
+
+import sys
+import smbus
+import serial
+sys.path.append("/home/pi/code/quick2wire-python-api/")
+from flask import Flask, render_template, request
+from quick2wire.i2c import I2CMaster, writing_bytes, reading
+
+bus = smbus.SMBus(1)
+POWER_ADDRESS = 0x01
+
+address = 0x04
+right = 0
+left = 0
+up = 0
+button1 = 0
+button2 = 0
+ser = serial.Serial('/dev/ttyACM0', 9600)
+import time
+
+#PORT = 10
+#HOST = '10.42.0.111'
+
+app = Flask(__name__)
+print('here')
+@app.route("/left/",methods=['GET','POST'])
+def default():
+        if request.method == 'GET':
+                left = request.args.get('left', 'no val')
+                right = request.args.get('right', 'no val')
+                up = request.args.get('up', 'no val')
+                button1 = request.args.get('button1', 'no val')
+                button2 = request.args.get('button2', 'no val')
+                left = int(left)
+                right = int(right)
+                up = int(up)
+                button1 = int(button1)
+                button2 = int(button2)
+                String = [left,right,up,button1,button2]
+
+                #test = [1,2,3]
+                #print (String)
+                line = ser.readline()
+                print(line, String)
+                #Battery = bus.read_byte_data(address, 4)
+                #print (Battery)
+
+                bus.write_i2c_block_data(address, 5, String)
+
+        return render_template('main.html')
+
+@app.route("/status/",methods=['GET'])
+def status():
+        if request.method == 'GET':
+                print("Checking Status")
+                line = ser.readline()
+                print(line)
+
+        return str(line)
+
+if __name__ == '__main__':
+        app.run(host='0.0.0.0', port=10, debug=True)
